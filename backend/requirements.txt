@@ -30,5 +30,7 @@ openpyxl==3.1.5
 requests==2.32.5
 openai==2.3.0
 
-# Scientific Computing
+# Scientific Computing (CPU only - no CUDA)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
 numpy==2.3.3
