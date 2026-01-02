@@ -15,15 +15,15 @@ class Settings(BaseSettings):
     neo4j_username: str = ""
     neo4j_password: str = ""
     
-    # Together AI Configuration (Primary LLM)
-    together_api_key: str = ""
-    together_base_url: str = "https://api.together.xyz/v1"
-    together_model: str = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
-    
-    # OpenAI Configuration (Fallback)
+    # OpenAI Configuration
     openai_api_key: str = ""
     openai_base_url: str = ""
     openai_model: str = "gpt-4.1-mini"
+    
+    # Together AI Configuration (used by GraphExtractor when llm_config not provided)
+    together_api_key: str = ""
+    together_base_url: str = "https://api.together.xyz/v1"
+    together_model: str = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
     
     # App Configuration
     app_name: str = "Graph RAG Builder"
