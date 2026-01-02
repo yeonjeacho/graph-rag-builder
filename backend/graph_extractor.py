@@ -74,26 +74,29 @@ class GraphExtractor:
         Args:
             api_key: API key for the LLM service
             model: Model name to use
-            base_url: Base URL for the API
+            base_url: Base URL for the API (empty string or None = use OpenAI default)
         """
         settings = get_settings()
         
         self.model = model or settings.together_model
+        self.api_key = api_key
         
-        # Determine API endpoint based on model
-        # OpenAI models: gpt-4o, gpt-4, gpt-3.5-turbo, etc.
-        is_openai_model = self.model.startswith('gpt-') or self.model.startswith('o1-')
+        # Determine API endpoint based on base_url
+        # If base_url is empty string or None, use OpenAI API directly
+        # Otherwise, use the provided base_url (Together AI, Groq, etc.)
+        use_custom_endpoint = base_url and base_url.strip()  # Non-empty base_url
         
-        if is_openai_model:
-            # Use OpenAI API directly
-            self.api_key = api_key  # User-provided OpenAI API key
-            self.base_url = None  # Use default OpenAI endpoint
-            print(f"🔑 Using OpenAI API for model: {self.model}")
+        if use_custom_endpoint:
+            # Use custom API endpoint (Together AI, Groq, etc.)
+            self.base_url = base_url.strip()
+            # If no API key provided, fall back to Together AI key from settings
+            if not self.api_key:
+                self.api_key = settings.together_api_key
+            print(f"🔑 Using custom API endpoint: {self.base_url} for model: {self.model}")
         else:
-            # Use Together AI API
-            self.api_key = api_key or settings.together_api_key
-            self.base_url = base_url or settings.together_base_url
-            print(f"🔑 Using Together AI API for model: {self.model}")
+            # Use OpenAI API directly (no base_url)
+            self.base_url = None
+            print(f"🔑 Using OpenAI API for model: {self.model}")
         
         # Initialize LLM
         llm_kwargs = {
