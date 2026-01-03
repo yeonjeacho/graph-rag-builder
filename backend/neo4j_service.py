@@ -295,40 +295,35 @@ class Neo4jService:
             return nodes
     
     @classmethod
-    def get_neighbors(cls, node_name: str, hops: int = 1, limit: int = 10) -> Tuple[List[Dict], List[Dict]]:
-        """Get neighboring nodes and relationships for a given node"""
+    def get_neighbors(cls, node_name: str, hops: int = 2, limit: int = 10) -> Tuple[List[Dict], List[Dict]]:
+        """Get neighboring nodes and relationships for a given node with variable hop depth"""
         with cls.session() as session:
-            query = """
-                MATCH (start {name: $name})-[r]-(neighbor)
-                RETURN start, r, neighbor
+            # Dynamic hop query using variable-length relationship pattern
+            query = f"""
+                MATCH path = (start {{name: $name}})-[*1..{hops}]-(neighbor)
+                WHERE start <> neighbor
+                UNWIND nodes(path) as node
+                UNWIND relationships(path) as rel
+                RETURN DISTINCT node, rel
                 LIMIT $limit
             """
-            result = session.run(query, {"name": node_name, "limit": limit})
+            result = session.run(query, {"name": node_name, "limit": limit * 2})
             
             nodes_map = {}
             relationships_map = {}
             
             for record in result:
-                # Process start node
-                start = record["start"]
-                if start.id not in nodes_map:
-                    nodes_map[start.id] = {
-                        "id": start.id,
-                        "labels": list(start.labels),
-                        "properties": dict(start)
-                    }
-                
-                # Process neighbor node
-                neighbor = record["neighbor"]
-                if neighbor.id not in nodes_map:
-                    nodes_map[neighbor.id] = {
-                        "id": neighbor.id,
-                        "labels": list(neighbor.labels),
-                        "properties": dict(neighbor)
+                # Process node
+                node = record["node"]
+                if node.id not in nodes_map:
+                    nodes_map[node.id] = {
+                        "id": node.id,
+                        "labels": list(node.labels),
+                        "properties": dict(node)
                     }
                 
                 # Process relationship
-                rel = record["r"]
+                rel = record["rel"]
                 rel_key = f"{rel.start_node.id}-{rel.type}-{rel.end_node.id}"
                 if rel_key not in relationships_map:
                     relationships_map[rel_key] = {

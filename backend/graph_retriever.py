@@ -50,7 +50,7 @@ RETRIEVAL_CONFIG = {
     "max_matched_nodes": 5,
     "max_neighbor_nodes": 10,
     "max_relationships": 15,
-    "hops": 1,
+    "hops": 2,
     "min_confidence": 0.6
 }
 
