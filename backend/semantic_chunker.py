@@ -6,7 +6,13 @@ Isolated module to prevent regression in existing code
 import os
 import numpy as np
 from typing import List, Dict, Any, Optional
-from sentence_transformers import SentenceTransformer
+# Import shared embedding model from vector_rag to avoid loading duplicate models
+try:
+    from vector_rag import LocalEmbeddings
+    USE_SHARED_MODEL = True
+except ImportError:
+    from sentence_transformers import SentenceTransformer
+    USE_SHARED_MODEL = False
 
 # Disable tokenizers parallelism warning
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
@@ -16,10 +22,11 @@ class SemanticChunker:
     """
     Semantic chunking using sentence embeddings.
     Splits text based on semantic similarity between sentences.
+    Uses the same model as VectorRAG to save memory.
     """
     
     _model = None
-    _model_name = "jhgan/ko-sroberta-multitask"  # Korean-optimized model
+    _model_name = "intfloat/multilingual-e5-small"  # Same as VectorRAG embedding model
     
     def __init__(self, similarity_threshold: float = 0.5, min_chunk_size: int = 100, max_chunk_size: int = 1000):
         """
@@ -36,11 +43,18 @@ class SemanticChunker:
         self._load_model()
     
     def _load_model(self):
-        """Load the sentence transformer model (singleton pattern)"""
+        """Load the sentence transformer model (singleton pattern, shared with VectorRAG)"""
         if SemanticChunker._model is None:
-            print(f"🧠 Loading semantic chunking model: {SemanticChunker._model_name}")
-            SemanticChunker._model = SentenceTransformer(SemanticChunker._model_name)
-            print("✅ Semantic chunking model loaded")
+            if USE_SHARED_MODEL:
+                # Reuse the model already loaded by VectorRAG
+                print(f"🧠 Reusing VectorRAG embedding model for semantic chunking")
+                embeddings = LocalEmbeddings()  # This uses singleton pattern
+                SemanticChunker._model = LocalEmbeddings._model
+                print("✅ Semantic chunking model loaded (shared with VectorRAG)")
+            else:
+                print(f"🧠 Loading semantic chunking model: {SemanticChunker._model_name}")
+                SemanticChunker._model = SentenceTransformer(SemanticChunker._model_name)
+                print("✅ Semantic chunking model loaded")
     
     def _split_into_sentences(self, text: str) -> List[str]:
         """Split text into sentences using multiple delimiters"""
